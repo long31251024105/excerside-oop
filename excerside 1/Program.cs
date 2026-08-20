@@ -94,11 +94,11 @@ namespace excerside_1
             // Tạo danh sách sinh viên
             Student[] students =
             {
-            new Student("Nguyen An", 8.5),
-            new Student("Tran Binh", 6.8),
+            new Student("Nguyen Long", 8.5),
+            new Student("Tran Canh", 6.8),
             new Student("Le Chi", 4.5),
             new Student("Pham Dung", 7.5),
-            new Student("Hoang Minh", 9.0)
+            new Student("Hoang Phu", 9.0)
         };
 
             // 1. In tổng số sinh viên
