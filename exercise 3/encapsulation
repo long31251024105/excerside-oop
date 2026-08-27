@@ -1,0 +1,274 @@
+using System;
+
+public class BankAccount
+{
+    // ===== 1. CÁC BIẾN PRIVATE =====
+
+    // Lưu số dư tài khoản
+    private decimal _balance;
+
+    // Lưu mã PIN của tài khoản
+    private string _pin;
+
+    // Đếm số lần nhập sai PIN liên tiếp
+    private int _failedAttempts;
+
+
+    // ===== 2. CÁC PROPERTY =====
+
+    // Tên chủ tài khoản
+    // Chỉ có thể đọc từ bên ngoài
+    public string AccountHolder { get; }
+
+    // Kiểm tra tài khoản có bị khóa hay không
+    // Bên ngoài chỉ được đọc, không được thay đổi
+    public bool IsLocked { get; private set; }
+
+
+    // ===== CONSTRUCTOR =====
+
+    public BankAccount(
+        string accountHolder,
+        decimal initialBalance,
+        string initialPin)
+    {
+        // Gán tên chủ tài khoản
+        AccountHolder = accountHolder;
+
+        // Nếu số dư ban đầu > 0 thì sử dụng
+        // Nếu không thì đặt bằng 0
+        _balance = initialBalance > 0 ? initialBalance : 0;
+
+        // Gán PIN ban đầu
+        _pin = initialPin;
+
+        // Ban đầu chưa nhập sai PIN lần nào
+        _failedAttempts = 0;
+
+        // Tài khoản ban đầu không bị khóa
+        IsLocked = false;
+    }
+
+
+    // ===== 3. DEPOSIT =====
+
+    public bool Deposit(decimal amount)
+    {
+        // Số tiền nạp phải lớn hơn 0
+        if (amount <= 0)
+        {
+            Console.WriteLine(
+                "Error: Deposit amount must be positive.");
+
+            return false;
+        }
+
+        // Cộng tiền vào số dư
+        _balance += amount;
+
+        Console.WriteLine(
+            $"Successfully deposited {amount:C}.");
+
+        return true;
+    }
+
+
+    // ===== 4. WITHDRAW =====
+
+    public bool Withdraw(decimal amount, string inputPin)
+    {
+        // Kiểm tra tài khoản có bị khóa không
+        if (IsLocked)
+        {
+            Console.WriteLine(
+                "Error: Account is locked due to multiple failed PIN attempts.");
+
+            return false;
+        }
+
+        // Kiểm tra PIN
+        if (inputPin != _pin)
+        {
+            // Tăng số lần nhập sai
+            _failedAttempts++;
+
+            // Nếu chưa đủ 3 lần
+            if (_failedAttempts < 3)
+            {
+                Console.WriteLine(
+                    $"Error: Invalid PIN code. (Attempt {_failedAttempts}/3)");
+            }
+            else
+            {
+                // Đủ 3 lần thì khóa tài khoản
+                IsLocked = true;
+
+                Console.WriteLine(
+                    "Error: Invalid PIN code. Account has been LOCKED for security!");
+            }
+
+            return false;
+        }
+
+        // PIN đúng thì reset số lần nhập sai
+        _failedAttempts = 0;
+
+        // Kiểm tra số tiền rút
+        if (amount <= 0)
+        {
+            Console.WriteLine(
+                "Error: Withdrawal amount must be positive.");
+
+            return false;
+        }
+
+        // Kiểm tra số dư
+        if (_balance < amount)
+        {
+            Console.WriteLine(
+                "Error: Insufficient balance.");
+
+            return false;
+        }
+
+        // Trừ tiền khỏi tài khoản
+        _balance -= amount;
+
+        Console.WriteLine(
+            $"Successfully withdrawn {amount:C}.");
+
+        return true;
+    }
+
+
+    // ===== 5. GET BALANCE =====
+
+    public decimal GetBalance(string inputPin)
+    {
+        // Phải nhập đúng PIN mới được xem số dư
+        if (inputPin != _pin)
+        {
+            Console.WriteLine(
+                "Error: Invalid PIN code.");
+
+            return -1m;
+        }
+
+        // Trả về số dư nếu PIN đúng
+        return _balance;
+    }
+
+
+    // ===== 6. CHANGE PIN =====
+
+    public bool ChangePin(
+        string currentPin,
+        string newPin)
+    {
+        // Kiểm tra PIN hiện tại
+        if (currentPin != _pin)
+        {
+            Console.WriteLine(
+                "Error: Invalid current PIN code.");
+
+            return false;
+        }
+
+        // PIN mới phải:
+        // - Không được rỗng
+        // - Có đúng 4 ký tự
+        // - Chỉ chứa số
+        if (string.IsNullOrEmpty(newPin) ||
+            newPin.Length != 4 ||
+            !int.TryParse(newPin, out _))
+        {
+            Console.WriteLine(
+                "Error: New PIN must be exactly 4 digits.");
+
+            return false;
+        }
+
+        // Cập nhật PIN mới
+        _pin = newPin;
+
+        Console.WriteLine(
+            "PIN changed successfully.");
+
+        return true;
+    }
+}
+
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Tạo tài khoản với:
+        // Tên: John Doe
+        // Số dư: $500
+        // PIN: 1234
+        BankAccount account =
+            new BankAccount(
+                "John Doe",
+                500.00m,
+                "1234");
+
+        Console.WriteLine(
+            $"Account Holder: {account.AccountHolder}");
+
+
+        // ===== 1. TEST DEPOSIT =====
+
+        Console.WriteLine(
+            "\n--- 1. Testing Deposit ---");
+
+        // Nạp số tiền âm -> thất bại
+        account.Deposit(-50m);
+
+        // Nạp $200 -> thành công
+        account.Deposit(200m);
+
+
+        // ===== 2. TEST GET BALANCE =====
+
+        Console.WriteLine(
+            "\n--- 2. Testing Protected Balance View ---");
+
+        // Nhập sai PIN
+        account.GetBalance("9999");
+
+        // Nhập đúng PIN
+        decimal currentBalance =
+            account.GetBalance("1234");
+
+        Console.WriteLine(
+            $"Verified Balance: {currentBalance:C}");
+
+
+        // ===== 3. TEST LOCKOUT =====
+
+        Console.WriteLine(
+            "\n--- 3. Testing Lockout Mechanism ---");
+
+        // Lần 1: Sai PIN
+        account.Withdraw(100m, "0000");
+
+        // Lần 2: Sai PIN
+        account.Withdraw(100m, "1111");
+
+        // Lần 3: Sai PIN -> khóa tài khoản
+        account.Withdraw(100m, "2222");
+
+        // Đúng PIN nhưng tài khoản đã bị khóa
+        account.Withdraw(100m, "1234");
+
+
+        // ===== 4. TEST LOCK STATUS =====
+
+        Console.WriteLine(
+            "\n--- 4. Account Lock Status ---");
+
+        Console.WriteLine(
+            $"Is account locked? {account.IsLocked}");
+    }
+}
